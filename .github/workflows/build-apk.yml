@@ -1,0 +1,53 @@
+
+name: Build APK Absensi Kerja
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Tampilkan isi repository
+        run: |
+          echo "Memeriksa file proyek..."
+          find . -maxdepth 4 -type f | sort
+
+      - name: Siapkan Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cari proyek Gradle
+        id: project
+        run: |
+          if [ -f "./gradlew" ]; then
+            echo "root=." >> "$GITHUB_OUTPUT"
+          elif [ -f "./AbsensiKerjaAndroid/gradlew" ]; then
+            echo "root=./AbsensiKerjaAndroid" >> "$GITHUB_OUTPUT"
+          else
+            echo "Gradle wrapper tidak ditemukan."
+            echo "Periksa struktur ZIP yang diunggah."
+            exit 1
+          fi
+
+      - name: Build APK
+        run: |
+          cd "${{ steps.project.outputs.root }}"
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Simpan APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AbsensiKerja-APK
+          path: '**/build/outputs/apk/debug/*.apk'
+          if-no-files-found: error
